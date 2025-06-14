@@ -1,0 +1,4 @@
+
+select *from SYS_DATABASEMANAGE
+
+select *from SYS_SERVERMANAGE
