@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pro.Core.DAL\Pro.Core.DAL.csproj" />
+    <ProjectReference Include="..\Pro.Core.Model\Pro.Core.Model.csproj" />
+  </ItemGroup>
+
+</Project>

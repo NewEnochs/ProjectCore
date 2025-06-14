@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pro.Core.WebApi", "Pro.Core.WebApi\Pro.Core.WebApi.csproj", "{C2820B89-3066-4D94-A9A8-B4BF9DF45D95}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pro.Core.Model", "Pro.Core.Model\Pro.Core.Model.csproj", "{D2106D51-F2E7-4C23-9846-44691795D29B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pro.Core.DAL", "Pro.Core.DAL\Pro.Core.DAL.csproj", "{648641C2-2147-4D3D-9C76-E2FAED7387DE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pro.Core.BLL", "Pro.Core.BLL\Pro.Core.BLL.csproj", "{84A4A7F1-B5EE-4A9B-BC17-24C4945ACB48}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pro.Core.Extension", "Pro.Core.Extension\Pro.Core.Extension.csproj", "{71B3EEC4-60C5-4CDE-A0ED-998EBAE3486C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pro.Core.Common", "Project.Core.Common\Pro.Core.Common.csproj", "{E65130CB-6CE7-4786-953E-C38B2DFCB77A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pro.Core.Web", "Pro.Core.Web\Pro.Core.Web.csproj", "{1C8F6BBF-6037-4989-87EB-E6E22D4C3E30}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2820B89-3066-4D94-A9A8-B4BF9DF45D95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2820B89-3066-4D94-A9A8-B4BF9DF45D95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2820B89-3066-4D94-A9A8-B4BF9DF45D95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2820B89-3066-4D94-A9A8-B4BF9DF45D95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2106D51-F2E7-4C23-9846-44691795D29B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2106D51-F2E7-4C23-9846-44691795D29B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2106D51-F2E7-4C23-9846-44691795D29B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2106D51-F2E7-4C23-9846-44691795D29B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{648641C2-2147-4D3D-9C76-E2FAED7387DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{648641C2-2147-4D3D-9C76-E2FAED7387DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{648641C2-2147-4D3D-9C76-E2FAED7387DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{648641C2-2147-4D3D-9C76-E2FAED7387DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84A4A7F1-B5EE-4A9B-BC17-24C4945ACB48}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84A4A7F1-B5EE-4A9B-BC17-24C4945ACB48}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84A4A7F1-B5EE-4A9B-BC17-24C4945ACB48}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84A4A7F1-B5EE-4A9B-BC17-24C4945ACB48}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71B3EEC4-60C5-4CDE-A0ED-998EBAE3486C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71B3EEC4-60C5-4CDE-A0ED-998EBAE3486C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71B3EEC4-60C5-4CDE-A0ED-998EBAE3486C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71B3EEC4-60C5-4CDE-A0ED-998EBAE3486C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E65130CB-6CE7-4786-953E-C38B2DFCB77A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E65130CB-6CE7-4786-953E-C38B2DFCB77A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E65130CB-6CE7-4786-953E-C38B2DFCB77A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E65130CB-6CE7-4786-953E-C38B2DFCB77A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C8F6BBF-6037-4989-87EB-E6E22D4C3E30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C8F6BBF-6037-4989-87EB-E6E22D4C3E30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C8F6BBF-6037-4989-87EB-E6E22D4C3E30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C8F6BBF-6037-4989-87EB-E6E22D4C3E30}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A153C6B8-2A30-4F78-804E-A287D998B817}
+		VisualSVNWorkingCopyRoot = .
+	EndGlobalSection
+EndGlobal

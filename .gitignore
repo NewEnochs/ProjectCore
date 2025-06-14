@@ -1,0 +1,13 @@
+/.vs
+/Pro.Core.BLL/obj
+/Pro.Core.BLL/bin
+/Pro.Core.DAL/obj
+/Pro.Core.DAL/bin
+/Pro.Core.Extension/obj
+/Pro.Core.Extension/bin
+/Pro.Core.Model/obj
+/Pro.Core.Model/bin
+/Pro.Core.WebApi/obj
+/Pro.Core.WebApi/bin
+/Project.Core.Common/bin
+/Project.Core.Common/obj

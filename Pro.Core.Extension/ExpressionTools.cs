@@ -1,0 +1,915 @@
+﻿
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+using System.Collections;
+using SqlSugar;
+
+namespace Pro.Core.Extension
+{
+    //中间层 引用数据层
+    public class ExpressionTools
+    {
+
+
+        #region 查询条件 lamada表达式(根据method而定)
+        /// <summary>
+        /// 查询条件 lamada表达式(method默认 Contains)
+        /// </summary>
+        /// <param name="IsLowLevel">是否包含显示下级</param>
+        /// <param name="columnName">列名</param>
+        public static void GetParsByCondition<T>(string columnName, List<Expression<Func<T, bool>>> parmList, string value = "", string methodInfo = "Contains")
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(columnName))
+                {
+
+                    ParameterExpression param = Expression.Parameter(typeof(T), "c");
+                    MethodInfo method = typeof(string).GetMethod(methodInfo);
+                    MethodInfo strings = typeof(object).GetMethod("ToString", new Type[] { });
+                    MemberExpression left = Expression.Property(param, typeof(T).GetProperty(columnName));
+
+                    //右边表达式
+                    ConstantExpression right = null;
+
+                    right = Expression.Constant(value);
+
+
+                    MethodCallExpression filter = null;
+                    Expression filters = null;
+                    if (methodInfo == "Contains")
+                    {
+                        //int类型转为string的表达式
+                        Expression left1 = Expression.Call(left, strings);
+                        filter = Expression.Call(right, method, left1);
+                    }
+                    else if (methodInfo == "DateTime")
+                    {
+                        if (value.Contains(",") && value.Length >= 8)
+                        {
+                            string strValue = value.Split(',').ToString();
+                            ConstantExpression right1 = null;
+
+                            if (!string.IsNullOrEmpty(strValue[0].ToString()))
+                            {
+                                right = Expression.Constant(strValue[0]);
+                            }
+                            else if (!string.IsNullOrEmpty(strValue[1].ToString()))
+                            {
+                                right1 = Expression.Constant(strValue[1]);
+                            }
+
+                            filters = Expression.GreaterThanOrEqual(left, right);
+                            filters = Expression.LessThanOrEqual(left, right1);
+                        }
+                    }
+                    else if (methodInfo == "num")
+                    {
+                        filters = Expression.GreaterThanOrEqual(left, right);
+                    }
+                    else
+                    {
+                        filter = Expression.Call(left, method, right);
+                    }
+
+                    Expression<Func<T, bool>> pras = Expression.Lambda<Func<T, bool>>(filter, param);
+                    parmList.Add(pras);
+                }
+            }
+            catch (Exception e)
+            {
+                new Exception(e.Message);
+            }
+        }
+        #endregion
+
+        #region 查询条件 lamada表达式( ==   or)
+        /// <summary>
+        /// 查询条件 lamada表达式( ==   or)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="columnName"></param>
+        /// <param name="parmList"></param>
+        public static void GetEqualPars1<T>(string columnName, List<Expression<Func<T, bool>>> parmList, string value = "", string methodInfo = "")
+        {
+            try
+            {
+
+                if (!string.IsNullOrEmpty(value))
+                {
+                    ParameterExpression param = Expression.Parameter(typeof(T), "c");
+                    MethodInfo method = null;
+                    if (!string.IsNullOrEmpty(methodInfo))
+                    {
+                        method = typeof(string).GetMethod(methodInfo);
+                    }
+                    //转string类型
+                    MethodInfo strings = typeof(object).GetMethod("ToString", new Type[] { });
+
+                    //构造左表达式
+                    MemberExpression left = null;
+
+                    //构造右表达式  用ConstantExpression表达式表示具有常量值的表达式
+                    ConstantExpression right2 = Expression.Constant(value);
+
+                    Expression where2 = null;
+
+                    if (columnName.Contains("/"))
+                    {
+                        string[] attrColumn = columnName.Split('/');
+                        //获取字段(多字段)
+                        for (int i = 0; i < attrColumn.Length; i++)
+                        {
+                            PropertyInfo property = typeof(T).GetProperty(attrColumn[i]);
+
+                            left = Expression.Property(param, property);
+                            Expression left1 = Expression.Call(left, strings);
+
+                            if (methodInfo == "Contains")       //模糊查询
+                            {
+                                if (i == 0)
+                                {
+                                    //进行合并
+                                    where2 = Expression.Call(left1, method, right2);
+                                }
+                                else
+                                {
+                                    //进行合并
+                                    Expression filterTmp = Expression.Call(left1, method, right2);
+                                    where2 = Expression.Or(filterTmp, where2);
+                                }
+                            }
+                            else
+                            {
+                                if (i == 0)
+                                {
+                                    //进行合并
+                                    where2 = Expression.Equal(left1, right2);
+                                }
+                                else
+                                {
+                                    //进行合并
+                                    Expression filterTmp = Expression.Equal(left1, right2);
+                                    where2 = Expression.Or(filterTmp, where2);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        left = Expression.Property(param, columnName);
+                        if (methodInfo == "Contains")       //模糊查询
+                        {
+                            if (value.Contains(","))
+                            {
+                                string[] ids = value.Split(',');
+                                Expression left1 = Expression.Call(left, strings);
+                                for (int i = 0; i < ids.Length; i++)
+                                {
+                                    var id = ids[i];
+                                    right2 = Expression.Constant(id);
+
+                                    if (i == 0)
+                                    {
+                                        //进行合并
+                                        where2 = Expression.Equal(left1, right2);
+                                    }
+                                    else
+                                    {
+                                        //进行合并
+                                        Expression filterTmp = Expression.Equal(left1, right2);
+                                        where2 = Expression.Or(filterTmp, where2);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                //Expression left1 = Expression.Call(left, strings);
+                                where2 = Expression.Call(left, method, right2);
+                            }
+                        }
+                        else if (methodInfo == "DateTime")
+                        {
+                            if (value.Contains(",") && value != ",")
+                            {
+                                string[] strValue = value.Split(',');
+                                ConstantExpression right1 = null;
+                                right2 = null;
+                                //开始时间
+                                if (!string.IsNullOrEmpty(strValue[0].ToString()))
+                                {
+                                    right1 = Expression.Constant(Convert.ToDateTime(strValue[0]), typeof(DateTime?));
+                                }
+                                //结束时间
+                                if (!string.IsNullOrEmpty(strValue[1].ToString()))
+                                {
+                                    right2 = Expression.Constant(Convert.ToDateTime(strValue[1]), typeof(DateTime?));
+                                }
+
+                                if (right1 != null && right2 == null)       //只有开始时间
+                                {
+                                    where2 = Expression.GreaterThanOrEqual(left, right1);   //大于开始时间
+                                }
+                                else if (right1 == null && right2 != null)  //只有结束时间
+                                {
+                                    where2 = Expression.LessThanOrEqual(left, right2);      //小于结束时间
+                                }
+                                else if (right1 != null && right2 != null)  //有开始时间又有结束时间
+                                {
+                                    where2 = Expression.GreaterThanOrEqual(left, right1);
+                                    Expression filterTmp = Expression.LessThanOrEqual(left, right2);
+                                    where2 = Expression.And(filterTmp, where2);
+                                }
+                            }
+                        }
+                        else if (methodInfo == "num")
+                        {
+                            ConstantExpression right1 = Expression.Constant(Convert.ToInt32(value), typeof(int?));
+                            where2 = Expression.Equal(left, right1);
+                        }
+                        else
+                        {
+                            //进行合并：例如 c.name.ToString()==value
+                            //Expression left1 = Expression.Call(left, strings);
+                            where2 = Expression.Equal(left, right2);
+
+                        }
+                    }
+
+                    Expression<Func<T, bool>> pras = Expression.Lambda<Func<T, bool>>(where2, param);
+                    parmList.Add(pras);
+                }
+            }
+            catch (Exception e)
+            {
+                new Exception(e.Message);
+            }
+
+        }
+        #endregion
+
+
+        #region 查询条件 lamada表达式( ==   or)
+        /// <summary>
+        /// 查询条件 lamada表达式( ==   or)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="columnName"></param>
+        /// <param name="parmList"></param>
+        public static void GetEqualPars<T>(string columnName, List<Expression<Func<T, bool>>> parmList, string value = "", string methodInfo = "")
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    //expression表达式树主体构造开始
+                    ParameterExpression param = Expression.Parameter(typeof(T), "c");   //声明Lambda表达式中的参数表达式c(c=>c.columnaName == value)
+                    MethodInfo method = null;
+                    if (!string.IsNullOrEmpty(methodInfo))
+                    {
+                        //method = typeof(string).GetMethod(methodInfo);
+                        method= typeof(string).GetMethod("Contains", new[] { typeof(string) });
+                    }
+                    //转string类型
+                    MethodInfo strings = typeof(object).GetMethod("ToString", new Type[] { });
+
+                    string[] attrColumn = null;
+                    MemberExpression left = null;
+
+                    //构造右表达式  用ConstantExpression表达式表示具有常量值的表达式
+                    ConstantExpression right1 = null;
+                    ConstantExpression right2 = null;
+
+                    Expression where2 = null;
+                    PropertyInfo propertys = typeof(T).GetProperty(columnName);
+
+                    ConstanRights<T>(columnName, value, methodInfo, ref right1, ref right2);
+
+                    if (columnName.Contains("/"))
+                    {
+                        attrColumn = columnName.Split('/');
+                        //获取字段(多字段)
+                        for (int i = 0; i < attrColumn.Length; i++)
+                        {
+                            PropertyInfo property = typeof(T).GetProperty(attrColumn[i]);
+
+                            left = Expression.Property(param, property);
+                            Expression left1 = Expression.Call(left, strings);
+
+                            //构造右表达式  用ConstantExpression表达式表示具有常量值的表达式
+                            right2 = Expression.Constant(value);
+                            if (methodInfo == "Contains")       //模糊查询
+                            {
+                                if (i == 0)
+                                {
+                                    where2 = Expression.Call(left1, method, right2);
+                                }
+                                else
+                                {
+                                    Expression filterTmp = Expression.Call(left1, method, right2);
+                                    where2 = Expression.Or(filterTmp, where2);
+                                }
+                            }
+                            else
+                            {
+                                if (i == 0)
+                                {
+                                    //进行合并：例如:employeeid==登录员工ID
+                                    where2 = Expression.Equal(left1, right2);
+                                }
+                                else
+                                {
+                                    //进行合并：例如:employeeid==登录员工ID
+                                    Expression filterTmp = Expression.Equal(left1, right2);
+                                    where2 = Expression.Or(filterTmp, where2);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        left = Expression.Property(param, columnName);
+                        if (methodInfo == "Contains")       //模糊查询
+                        {
+                            Expression left1 = Expression.Call(left, strings);
+                            if (value.Contains(","))            //多选
+                            {
+                                where2 = Expression.Call(right2, method, left1);
+                            }
+                            else                        //单个模糊查询
+                            {
+                                where2 = Expression.Call(left1, method, right2);
+                            }
+                        }
+                        else if (methodInfo == "equals")       //多个数据查询
+                        {
+                            Expression left1 = Expression.Call(left, strings);
+                            if (value.Contains(","))            //多选
+                            {
+                                method = typeof(string).GetMethod("Contains");
+                                where2 = Expression.Call(right2, method, left1);
+
+                            }
+                            else                        //单个查询
+                            {
+                                where2 = Expression.Equal(left, right2);
+                            }
+                        }
+                        else if (methodInfo == "DateTime")
+                        {
+                            if (right2 == null && right1 != null)
+                            {
+                                where2 = Expression.GreaterThanOrEqual(left, right1);
+                            }
+                            else if (right2 != null && right1 == null)
+                            {
+                                where2 = Expression.LessThanOrEqual(left, right2);
+                            }
+                            else if (right2 != null && right1 != null)
+                            {
+                                where2 = Expression.GreaterThanOrEqual(left, right1);
+                                Expression filterTmp = Expression.LessThanOrEqual(left, right2);
+                                where2 = Expression.And(filterTmp, where2);
+                            }
+                        }
+                        else
+                        {
+                            where2 = Expression.Equal(left, right2);
+
+                        }
+                    }
+
+                    Expression<Func<T, bool>> pras = Expression.Lambda<Func<T, bool>>(where2, param);
+                    parmList.Add(pras);
+                }
+            }
+            catch (Exception e)
+            {
+                new Exception(e.Message);
+            }
+
+        }
+        #endregion
+
+
+        #region 组装右边的值 常量表达式
+        /// <summary>
+        /// 右边的值 并转成相应的数据类型
+        /// </summary>
+        public static void ConstanRights<T>(string columnName, string value, string methodInfo, ref ConstantExpression right1, ref ConstantExpression right2)
+        {
+            bool isGenericType = false;
+            PropertyInfo propertys = typeof(T).GetProperty(columnName);
+
+            if (propertys != null)
+            {
+                //搜索PropertyType是否可为空
+                isGenericType = propertys.PropertyType.IsGenericType && propertys.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+
+                if (columnName.ToUpper() == propertys.Name.ToUpper())
+                {
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        if (isGenericType)
+                        {
+                            if (value.Contains(","))
+                            {
+                                if (methodInfo == "Contains" || methodInfo == "equals")
+                                {
+                                    right2 = Expression.Constant(Convert.ChangeType(value, Nullable.GetUnderlyingType(typeof(string))), typeof(string));  //如果可为空类型，则将value的类型设置为可为空类型
+                                }
+                                else
+                                {
+                                    string[] strValue = value.Split(',');
+                                    if (!string.IsNullOrEmpty(strValue[0]))
+                                    {
+                                        right1 = Expression.Constant(Convert.ChangeType(strValue[0], Nullable.GetUnderlyingType(propertys.PropertyType)), propertys.PropertyType);  //如果可为空类型，则将value的类型设置为可为空类型
+                                    }
+                                    if (!string.IsNullOrEmpty(strValue[1]))
+                                    {
+                                        right2 = Expression.Constant(Convert.ChangeType(strValue[1], Nullable.GetUnderlyingType(propertys.PropertyType)), propertys.PropertyType);  //如果可为空类型，则将value的类型设置为可为空类型
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                right2 = Expression.Constant(Convert.ChangeType(value, Nullable.GetUnderlyingType(propertys.PropertyType)), propertys.PropertyType);  //如果可为空类型，则将value的类型设置为可为空类型
+                            }
+                        }
+                        else
+                        {
+                            if (value.Contains(","))
+                            {
+                                if (methodInfo == "Contains" || methodInfo == "equals")
+                                {
+                                    right2 = Expression.Constant(Convert.ChangeType(value, typeof(string)));
+                                }
+                                else
+                                {
+                                    string[] strValue = value.Split(',');
+                                    if (!string.IsNullOrEmpty(strValue[0]))
+                                    {
+                                        right1 = Expression.Constant(Convert.ChangeType(strValue[0], propertys.PropertyType));
+                                    }
+                                    if (!string.IsNullOrEmpty(strValue[1]))
+                                    {
+                                        right2 = Expression.Constant(Convert.ChangeType(strValue[1], propertys.PropertyType));
+                                    }
+                                }
+
+                            }
+                            else
+                            {
+                                right2 = Expression.Constant(Convert.ChangeType(value, propertys.PropertyType));
+                            }
+                        }
+                    }
+
+                    //多字段查询
+                    //if (columnName.Contains("/") && isGenericType)
+                    //{
+                    //    attrColumn = columnName.Split('/');
+                    //    for (int i = 0; i < attrColumn.Length; i++)
+                    //    {
+                    //        var singleColumn = attrColumn[i];
+
+                    //    }
+                    //    if (isGenericType)
+                    //    {
+
+                    //    }
+                    //    else
+                    //    {
+                    //    }
+                    //}
+                }
+            }
+            else
+            {
+                if (columnName.Contains("/"))
+                {
+                    int i = 0;
+                    List<string> columnList = columnName.Split('/').ToList();
+                    foreach (var column in columnList)
+                    {
+                        PropertyInfo property = typeof(T).GetProperty(column);  //字段属性
+                        //MemberExpression left = Expression.Property(param, property);       //主题表达式
+                        //Expression left1 = Expression.Call(left, strings);
+                        //if (i == 0)
+                        //{
+                        //    where2 = Expression.Call(left1, method, right2);
+                        //}
+                        //else
+                        //{
+                        //    Expression where = Expression.Call(left1, method, right2);
+                        //    where2 = Expression.Or(where2, where);
+                        //}
+                        i++;
+                    }
+                }
+            }
+        }
+        #endregion
+
+
+        #region 查询条件 lamada表达式( ==   or)
+        /// <summary>
+        /// 查询条件 lamada表达式( ==   or)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="columnName"></param>
+        /// <param name="parmList"></param>
+        /// <param name="value"></param>
+        /// <param name="methodInfo"></param>
+        public static void GetEqualPars3<T>(string columnName, List<Expression<Func<T, bool>>> parmList, string value = "", string methodInfo = "")
+        {
+            if (string.IsNullOrEmpty(value)) return;
+
+            try
+            {
+                var method = GetStringMethod(methodInfo);
+                var param = Expression.Parameter(typeof(T), "c");
+
+                if (columnName.Contains("/"))
+                {
+                    HandleMultiColumnExpression<T>(columnName, value, methodInfo, param, parmList);
+                }
+                else
+                {
+                    HandleSingleColumnExpression<T>(columnName, value, methodInfo, param, parmList);
+                }
+            }
+            catch (Exception e)
+            {
+                throw new Exception("构建表达式失败", e);
+            }
+        }
+
+        private static MethodInfo GetStringMethod(string methodInfo)
+        {
+            if (string.IsNullOrEmpty(methodInfo)) return null;
+
+            return methodInfo.ToLower() switch
+            {
+                "startswith" => typeof(string).GetMethod("StartsWith", new[] { typeof(string) }),
+                "endswith" => typeof(string).GetMethod("EndsWith", new[] { typeof(string) }),
+                "contains" => typeof(string).GetMethod("Contains", new[] { typeof(string) }),
+                _ => typeof(string).GetMethod("Contains", new[] { typeof(string) })
+            };
+        }
+
+        private static void HandleMultiColumnExpression<T>(string columnName, string value, string methodInfo, ParameterExpression param, List<Expression<Func<T, bool>>> parmList)
+        {
+            var attrColumn = columnName.Split('/');
+            var methodArr = methodInfo.Split('/');
+            Expression where2 = null;
+
+            for (int i = 0; i < attrColumn.Length; i++)
+            {
+                var currentMethod = methodArr.Length == attrColumn.Length ? methodArr[i] : methodInfo;
+                var property = typeof(T).GetProperty(attrColumn[i]);
+                if (property == null) continue;
+
+                var left = Expression.Property(param, property);
+                var left1 = Expression.Call(left, typeof(object).GetMethod("ToString", new Type[0]));
+                var right2 = GetRightExpression<T>(attrColumn[i], value, currentMethod);
+
+                Expression currentExpression = currentMethod.ToLower() switch
+                {
+                    "contains" => Expression.Call(left1, typeof(string).GetMethod("Contains", new[] { typeof(string) }), right2),
+                    "startswith" => Expression.Call(left1, typeof(string).GetMethod("StartsWith", new[] { typeof(string) }), right2),
+                    "endswith" => Expression.Call(left1, typeof(string).GetMethod("EndsWith", new[] { typeof(string) }), right2),
+                    "range" => HandleRangeExpression(left, value),
+                    _ => Expression.Equal(left1, right2)
+                };
+
+                where2 = i == 0 ? currentExpression : Expression.Or(where2, currentExpression);
+            }
+
+            if (where2 != null)
+            {
+                parmList.Add(Expression.Lambda<Func<T, bool>>(where2, param));
+            }
+        }
+
+        private static void HandleSingleColumnExpression<T>(string columnName, string value, string methodInfo, ParameterExpression param, List<Expression<Func<T, bool>>> parmList)
+        {
+            var property = typeof(T).GetProperty(columnName);
+            if (property == null) return;
+
+            var left = Expression.Property(param, property);
+            var right2 = GetRightExpression<T>(columnName, value, methodInfo);
+
+            Expression where2 = methodInfo.ToLower() switch
+            {
+                "contains" => value.Contains(",")
+                    ? Expression.Call(right2, typeof(string).GetMethod("Contains"), Expression.Call(left, typeof(object).GetMethod("ToString")))
+                    : Expression.Call(Expression.Call(left, typeof(object).GetMethod("ToString")), typeof(string).GetMethod("Contains"), right2),
+                "equals" => value.Contains(",")
+                    ? Expression.Call(right2, typeof(string).GetMethod("Contains"), Expression.Call(left, typeof(object).GetMethod("ToString")))
+                    : Expression.Equal(left, right2),
+                "startswith" or "endswith" => Expression.Call(
+                    Expression.Call(left, typeof(object).GetMethod("ToString")),
+                    methodInfo.ToLower() == "startswith"
+                        ? typeof(string).GetMethod("StartsWith", new[] { typeof(string) })
+                        : typeof(string).GetMethod("EndsWith", new[] { typeof(string) }),
+                    right2),
+                "range" => HandleRangeExpression(left, value),
+                _ => Expression.Equal(left, right2)
+            };
+
+            parmList.Add(Expression.Lambda<Func<T, bool>>(where2, param));
+        }
+
+        private static Expression HandleRangeExpression(MemberExpression left, string value)
+        {
+            var values = value.Split(',');
+            var propertyType = left.Type;
+            var isNullable = propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+            var underlyingType = isNullable ? Nullable.GetUnderlyingType(propertyType) : propertyType;
+
+            Expression startExpr = null, endExpr = null;
+
+            if (!string.IsNullOrEmpty(values[0]))
+            {
+                var startValue = Convert.ChangeType(values[0], underlyingType);
+                startExpr = Expression.GreaterThanOrEqual(left, Expression.Constant(startValue, propertyType));
+            }
+
+            if (values.Length > 1 && !string.IsNullOrEmpty(values[1]))
+            {
+                var endValue = Convert.ChangeType(values[1], underlyingType);
+                endExpr = Expression.LessThanOrEqual(left, Expression.Constant(endValue, propertyType));
+            }
+
+            if (startExpr != null && endExpr != null)
+                return Expression.And(startExpr, endExpr);
+
+            return startExpr ?? endExpr;
+        }
+
+        private static ConstantExpression GetRightExpression<T>(string columnName, string value, string methodInfo)
+        {
+            var property = typeof(T).GetProperty(columnName);
+            if (property == null) return Expression.Constant(value);
+
+            var isNullable = property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+            var targetType = isNullable ? Nullable.GetUnderlyingType(property.PropertyType) : property.PropertyType;
+
+            if (value.Contains(",") && methodInfo.ToLower() is "contains" or "equals")
+            {
+                return Expression.Constant(value);
+            }
+
+            if (value.Contains(","))
+            {
+                var values = value.Split(',');
+                return Expression.Constant(Convert.ChangeType(values[0], targetType), property.PropertyType);
+            }
+
+            return Expression.Constant(Convert.ChangeType(value, targetType), property.PropertyType);
+        }
+        #endregion
+
+
+
+
+        //支持sql sugar   以上用法针对ORM为sql sugar的有问题
+        #region 查询条件 lamada表达式( ==   or)
+        /// <summary>
+        /// 查询条件 lamada表达式( ==   or)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="columnName"></param>
+        /// <param name="parmList"></param>
+        public static void GetEqualPars<T>(string columnName, List<Expression<Func<T, bool>>> parmList, string value = "", string methodInfo = "", string body = "c") where T : class, new()
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    //expression表达式树主体构造开始
+                    ParameterExpression param = Expression.Parameter(typeof(T), body);   //声明Lambda表达式中的参数表达式c(c=>c.columnaName == value)
+                    MethodInfo method = null;
+                    if (!string.IsNullOrEmpty(methodInfo))
+                    {
+                        if (methodInfo.IndexOf("/") >= 0)
+                        {
+                            method = typeof(string).GetMethod(methodInfo.Split('/')[0], new Type[] { typeof(string) });
+                        }
+                        else
+                        {
+                            method = typeof(string).GetMethod(methodInfo, new Type[] { typeof(string) });
+                        }
+                    }
+                    //转string类型
+                    MethodInfo strings = typeof(object).GetMethod("ToString", new Type[] { });
+
+                    string[] attrColumn = null;
+                    string[] attrMehotd = null;
+                    MemberExpression left = null;
+
+                    //构造右表达式  用ConstantExpression表达式表示具有常量值的表达式
+                    ConstantExpression right1 = null;
+                    ConstantExpression right2 = null;
+
+                    Expression where2 = null;
+                    PropertyInfo propertys = typeof(T).GetProperty(columnName);
+
+                    ConstanRights<T>(columnName, value, methodInfo, ref right1, ref right2);
+                    //sql sugar写法
+                    var exp1 = Expressionable.Create<T>();
+                    //是否外部写表达式 默认否
+                    bool isGenerate = false;
+
+                    if (columnName.Contains("/"))
+                    {
+                        attrColumn = columnName.Split('/');
+                        attrMehotd = methodInfo.Split('/');
+                        //获取字段(多字段)
+                        for (int i = 0; i < attrColumn.Length; i++)
+                        {
+                            if (attrMehotd.Length == attrColumn.Length)
+                            {
+                                method = typeof(string).GetMethod(attrMehotd[i], new Type[] { typeof(string) });
+                            }
+                            PropertyInfo property = typeof(T).GetProperty(attrColumn[i]);
+
+                            left = Expression.Property(param, property);
+                            Expression left1 = Expression.Call(left, strings);
+
+                            //构造右表达式  用ConstantExpression表达式表示具有常量值的表达式
+                            right2 = Expression.Constant(value);
+                            if (attrMehotd[i] == "Contains" || attrMehotd[i] == "StartsWith" || attrMehotd[i] == "EndsWith")       //模糊查询
+                            {
+                                if (method == null)
+                                {
+                                    throw new Exception("运算符表达错误,请调整");
+                                }
+
+                                if (i == 0)
+                                {
+                                    where2 = Expression.Call(left1, method, right2);
+                                    Expression<Func<T, bool>> pras1 = Expression.Lambda<Func<T, bool>>(where2, param);
+                                    exp1.And(pras1);
+                                }
+                                else
+                                {
+                                    where2 = Expression.Call(left1, method, right2);
+                                    Expression<Func<T, bool>> pras1 = Expression.Lambda<Func<T, bool>>(where2, param);
+                                    exp1.Or(pras1);
+                                }
+                            }
+                            else
+                            {
+                                if (i == 0)
+                                {
+                                    //进行合并：例如:employeeid==登录员工ID
+                                    where2 = Expression.Equal(left1, right2);
+                                    Expression<Func<T, bool>> pras1 = Expression.Lambda<Func<T, bool>>(where2, param);
+                                    exp1.And(pras1);
+                                }
+                                else
+                                {
+                                    //进行合并：例如:employeeid==登录员工ID
+                                    where2 = Expression.Equal(left1, right2);
+                                    Expression<Func<T, bool>> pras1 = Expression.Lambda<Func<T, bool>>(where2, param);
+                                    exp1.Or(pras1);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        left = Expression.Property(param, columnName);
+                        if (methodInfo == "Contains" || methodInfo == "StartsWith" || methodInfo == "EndsWith")       //模糊查询
+                        {
+                            if (method == null)
+                            {
+                                throw new Exception("运算符表达错误,请调整");
+                            }
+                            Expression left1 = Expression.Call(left, strings);
+                            if (value.Contains(","))            //多选
+                            {
+                                where2 = Expression.Call(right2, method, left1);
+                            }
+                            else                        //单个模糊查询
+                            {
+                                where2 = Expression.Call(left1, method, right2);
+                            }
+                            isGenerate = true;
+                        }
+                        else if (methodInfo == "Equal")       //多个数据查询
+                        {
+                            Expression left1 = Expression.Call(left, strings);
+                            if (value.Contains(","))            //多选
+                            {
+                                method = typeof(string).GetMethod("Contains");
+                                if (method == null)
+                                {
+                                    throw new Exception("运算符表达错误,请调整");
+                                }
+                                where2 = Expression.Call(right2, method, left1);
+                            }
+                            else                        //单个查询
+                            {
+                                where2 = Expression.Equal(left, right2);
+                            }
+                            isGenerate = true;
+                        }
+                        else if (methodInfo == "Range")
+                        {
+                            if (right2 == null && right1 != null)
+                            {
+                                where2 = Expression.GreaterThanOrEqual(left, right1);
+                            }
+                            else if (right2 != null && right1 == null)
+                            {
+                                where2 = Expression.LessThanOrEqual(left, right2);
+                            }
+                            else if (right2 != null && right1 != null)
+                            {
+                                where2 = Expression.GreaterThanOrEqual(left, right1);
+                                Expression filterTmp = Expression.LessThanOrEqual(left, right2);
+                                Expression<Func<T, bool>> pras1 = Expression.Lambda<Func<T, bool>>(where2, param);
+                                Expression<Func<T, bool>> pras2 = Expression.Lambda<Func<T, bool>>(filterTmp, param);
+                                exp1.And(pras1);
+                                exp1.And(pras2);
+                            }
+                        }
+                        else
+                        {
+                            where2 = Expression.Equal(left, right2);
+                            isGenerate = true;
+                        }
+                    }
+
+                    //需要在外部写生成表达式
+                    if (isGenerate)
+                    {
+                        Expression<Func<T, bool>> pras1 = Expression.Lambda<Func<T, bool>>(where2, param);
+                        exp1.And(pras1);
+                    }
+                    var parm = exp1.ToExpression();
+                    parmList.Add(parm);
+                }
+            }
+            catch (Exception e)
+            {
+                new Exception(e.Message);
+            }
+
+        }
+        #endregion
+
+    }
+
+    /// <summary>
+    /// 封装条件
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
+    public class ExpressionSearch<TEntity> where TEntity : class
+    {
+        /// <summary>
+        /// 封装条件
+        /// </summary>
+        /// <param name="searchs"></param>
+        /// <param name="parmList"></param>
+        public void GetSearch(List<PropModel> searchs, List<Expression<Func<TEntity, bool>>> parmList)
+        {
+            if (searchs.Count() > 0)
+            {
+                //排除可能出生的异常数据
+                searchs = searchs.Where(c => !string.IsNullOrEmpty(c.value) && c.value != "," && c.value != "-1").ToList();
+
+                foreach (PropModel item in searchs)
+                {
+                    ExpressionTools.GetEqualPars(item.property, parmList, item.value, item.method);
+                }
+            }
+        }
+    }
+
+    public partial class PropModel
+    {
+        /// <summary>
+        /// 字段名称属性
+        /// </summary>
+        public string property { get; set; }
+        /// <summary>
+        /// 字段值
+        /// </summary>
+        public string value { get; set; }
+        /// <summary>
+        /// lamada符号(运算符)
+        /// </summary>
+        public string method { get; set; }
+    }
+}
+
